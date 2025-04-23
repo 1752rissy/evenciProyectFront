@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vende lo que necesitas vender con inteligencia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        #camera {
+            width: 100%;
+            max-width: 500px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        #preview {
+            max-width: 500px;
+            max-height: 300px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #descripcion {
+            width: 100%;
+            max-width: 500px;
+            height: 100px;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        #precio {
+            width: 100%;
+            max-width: 500px;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .loading {
+            display: none;
+            margin: 10px;
+        }
+        .error {
+            color: #ff0000;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>📸 Vende tus productos fácilmente</h1>
+    <div id="error-message" class="error" style="display: none;"></div>
+    
+    <!-- Paso 1: Capturar imagen -->
+    <div id="step1">
+        <h2>1. Toma una foto de tu producto</h2>
+        <video id="camera" autoplay></video>
+        <button id="capture">Capturar foto</button>
+        <img id="preview" hidden>
+        <div id="loading-description" class="loading">Generando descripción...</div>
+    </div>
+    
+    <!-- Paso 2: Completar información -->
+    <div id="step2" style="display: none;">
+        <h2>2. Completa los detalles</h2>
+        <textarea id="descripcion" placeholder="Descripción del producto..."></textarea>
+        <input type="number" id="precio" placeholder="Precio (USD)" min="1">
+        <button id="publish">Publicar Producto</button>
+        <div id="loading-publish" class="loading">Publicando producto...</div>
+    </div>
+
+    <script>
+        // Configuración de la API
+        const API_BASE_URL = "https://envenciapi.onrender.com";
+        
+        // Elementos del DOM
+        const video = document.getElementById('camera');
+        const captureBtn = document.getElementById('capture');
+        const preview = document.getElementById('preview');
+        const descripcion = document.getElementById('descripcion');
+        const publishBtn = document.getElementById('publish');
+        const loadingDescription = document.getElementById('loading-description');
+        const loadingPublish = document.getElementById('loading-publish');
+        const errorMessage = document.getElementById('error-message');
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+
+        // Estado de la aplicación
+        let currentProduct = {
+            image: null,
+            description: null,
+            price: null
+        };
+
+        // Mostrar error
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            setTimeout(() => errorMessage.style.display = 'none', 5000);
+        }
+
+        // Acceder a la cámara
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => video.srcObject = stream)
+            .catch(err => {
+                console.error("Error al acceder a la cámara:", err);
+                showError("No se pudo acceder a la cámara. Asegúrate de permitir los permisos.");
+            });
+
+        // Capturar foto
+        captureBtn.addEventListener('click', async () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                currentProduct.image = canvas.toDataURL('image/jpeg');
+                
+                preview.src = currentProduct.image;
+                preview.hidden = false;
+                
+                // Mostrar loading
+                loadingDescription.style.display = 'block';
+                captureBtn.disabled = true;
+
+                // 1. Generar descripción con la API
+                const response = await fetch(`${API_BASE_URL}/api/generate-description`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: currentProduct.image })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al generar la descripción');
+                }
+
+                const data = await response.json();
+                
+                if (data.status === "error") {
+                    throw new Error(data.error || "Error desconocido");
+                }
+
+                currentProduct.description = data.description;
+                descripcion.value = data.description;
+                
+                // Mostrar paso 2
+                step1.style.display = 'none';
+                step2.style.display = 'block';
+
+            } catch (error) {
+                console.error("Error:", error);
+                showError(error.message || "Error al generar la descripción. Intenta nuevamente.");
+            } finally {
+                loadingDescription.style.display = 'none';
+                captureBtn.disabled = false;
+            }
+        });
+
+        // Publicar producto
+        publishBtn.addEventListener('click', async () => {
+            try {
+                const price = parseFloat(document.getElementById('precio').value);
+                
+                if (!price || price <= 0) {
+                    showError("Por favor ingresa un precio válido");
+                    return;
+                }
+
+                if (!currentProduct.description) {
+                    showError("Por favor genera una descripción primero");
+                    return;
+                }
+
+                currentProduct.price = price;
+                
+                // Mostrar loading
+                loadingPublish.style.display = 'block';
+                publishBtn.disabled = true;
+
+                // 2. Publicar producto con la API
+                const response = await fetch(`${API_BASE_URL}/api/publish-product`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image: currentProduct.image,
+                        description: currentProduct.description,
+                        price: currentProduct.price
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al publicar el producto');
+                }
+
+                const data = await response.json();
+                
+                if (data.status === "error") {
+                    throw new Error(data.error || "Error desconocido");
+                }
+
+                alert('¡Producto publicado con éxito!');
+                
+                // Resetear el formulario
+                preview.src = '';
+                preview.hidden = true;
+                descripcion.value = '';
+                document.getElementById('precio').value = '';
+                currentProduct = { image: null, description: null, price: null };
+                
+                // Volver al paso 1
+                step2.style.display = 'none';
+                step1.style.display = 'block';
+
+            } catch (error) {
+                console.error("Error:", error);
+                showError(error.message || "Error al publicar el producto. Intenta nuevamente.");
+            } finally {
+                loadingPublish.style.display = 'none';
+                publishBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
