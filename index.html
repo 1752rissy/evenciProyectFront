@@ -118,7 +118,6 @@
 <body>
     <h1>📸 Vende tus productos fácilmente con Evenci (desarrollado por Andres Gutierrez)</h1>
     <div id="error-message" class="error" style="display: none;"></div>
-    
     <!-- Paso 1: Capturar imagen -->
     <div id="step1">
         <h2>1. Toma una foto de tu producto</h2>
@@ -127,7 +126,6 @@
         <img id="preview" hidden>
         <div id="loading-description" class="loading">Generando descripción...</div>
     </div>
-    
     <!-- Paso 2: Completar información -->
     <div id="step2" style="display: none;">
         <h2>2. Completa los detalles</h2>
@@ -136,7 +134,6 @@
         <button id="publish">Publicar Producto</button>
         <div id="loading-publish" class="loading">Publicando producto...</div>
     </div>
-
     <!-- Muro de productos -->
     <div id="product-wall">
         <h2>Productos Publicados</h2>
@@ -155,11 +152,9 @@
         </div>
         <div id="products-container"></div>
     </div>
-
     <script>
         // Configuración de la API
-        const API_BASE_URL = "https://envenciapi.onrender.com";
-        
+        const API_BASE_URL = "https://envenciproject.onrender.com";
         // Elementos del DOM
         const video = document.getElementById('camera');
         const captureBtn = document.getElementById('capture');
@@ -206,10 +201,9 @@
                 canvas.height = video.videoHeight;
                 canvas.getContext('2d').drawImage(video, 0, 0);
                 currentProduct.image = canvas.toDataURL('image/jpeg');
-                
                 preview.src = currentProduct.image;
                 preview.hidden = false;
-                
+
                 // Mostrar loading
                 loadingDescription.style.display = 'block';
                 captureBtn.disabled = true;
@@ -220,24 +214,19 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ image: currentProduct.image })
                 });
-
                 if (!response.ok) {
                     throw new Error('Error al generar la descripción');
                 }
-
                 const data = await response.json();
-                
                 if (data.status === "error") {
                     throw new Error(data.error || "Error desconocido");
                 }
-
                 currentProduct.description = data.description;
                 descripcion.value = data.description;
-                
+
                 // Mostrar paso 2
                 step1.style.display = 'none';
                 step2.style.display = 'block';
-
             } catch (error) {
                 console.error("Error:", error);
                 showError(error.message || "Error al generar la descripción. Intenta nuevamente.");
@@ -251,19 +240,16 @@
         publishBtn.addEventListener('click', async () => {
             try {
                 const price = parseFloat(document.getElementById('precio').value);
-                
                 if (!price || price <= 0) {
                     showError("Por favor ingresa un precio válido");
                     return;
                 }
-
                 if (!currentProduct.description) {
                     showError("Por favor genera una descripción primero");
                     return;
                 }
-
                 currentProduct.price = price;
-                
+
                 // Mostrar loading
                 loadingPublish.style.display = 'block';
                 publishBtn.disabled = true;
@@ -278,33 +264,28 @@
                         price: currentProduct.price
                     })
                 });
-
                 if (!response.ok) {
                     throw new Error('Error al publicar el producto');
                 }
-
                 const data = await response.json();
-                
                 if (data.status === "error") {
                     throw new Error(data.error || "Error desconocido");
                 }
-
                 alert('¡Producto publicado con éxito!');
-                
+
                 // Resetear el formulario
                 preview.src = '';
                 preview.hidden = true;
                 descripcion.value = '';
                 document.getElementById('precio').value = '';
                 currentProduct = { image: null, description: null, price: null };
-                
+
                 // Volver al paso 1
                 step2.style.display = 'none';
                 step1.style.display = 'block';
 
                 // Recargar productos en el muro
                 await loadProducts();
-
             } catch (error) {
                 console.error("Error:", error);
                 showError(error.message || "Error al publicar el producto. Intenta nuevamente.");
@@ -328,18 +309,15 @@
                 if (!response.ok) {
                     throw new Error('Error al cargar los productos');
                 }
-
                 const data = await response.json();
                 if (data.status === "error") {
                     throw new Error(data.error || "Error desconocido");
                 }
 
                 productsContainer.innerHTML = ''; // Limpiar el contenedor
-
                 data.products.forEach(product => {
                     const productCard = document.createElement('div');
                     productCard.className = 'product-card';
-
                     productCard.innerHTML = `
                         <img src="${product.image}" alt="${product.description}">
                         <h3>${product.description}</h3>
@@ -347,10 +325,8 @@
                         <small>Categoría: ${product.category}</small>
                         <small>Etiquetas: ${product.tags.join(', ')}</small>
                     `;
-
                     productsContainer.appendChild(productCard);
                 });
-
             } catch (error) {
                 console.error("Error:", error);
                 showError(error.message || "Error al cargar los productos. Intenta nuevamente.");
@@ -364,7 +340,6 @@
                 if (!response.ok) {
                     throw new Error('Error al cargar los filtros');
                 }
-
                 const data = await response.json();
                 if (data.status === "error") {
                     throw new Error(data.error || "Error desconocido");
@@ -388,7 +363,6 @@
                     option.textContent = tag;
                     tagFilter.appendChild(option);
                 });
-
             } catch (error) {
                 console.error("Error:", error);
                 showError(error.message || "Error al cargar los filtros. Intenta nuevamente.");
