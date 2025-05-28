@@ -1,386 +1,149 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Vende lo que necesitas vender con inteligencia</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            text-align: center;
-        }
-        #camera {
-            width: 100%;
-            max-width: 500px;
-            background: #f0f0f0;
-            border-radius: 8px;
-            margin-bottom: 10px;
-        }
-        #preview {
-            max-width: 500px;
-            max-height: 300px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 5px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        #descripcion {
-            width: 100%;
-            max-width: 500px;
-            height: 150px; /* Aumentado el tamaño */
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            font-size: 16px; /* Aumentado el tamaño del texto */
-        }
-        #precio {
-            width: 100%;
-            max-width: 500px;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-        .loading {
-            display: none;
-            margin: 10px;
-        }
-        .error {
-            color: #ff0000;
-            margin: 10px 0;
-        }
-        /* Estilos para el muro de productos */
-        #product-wall {
-            margin-top: 40px;
-        }
-        #filters-container {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        #filters-container select {
-            padding: 10px;
-            margin-right: 10px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-        #products-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-        }
-        .product-card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            width: 200px;
-            padding: 10px;
-            text-align: center;
-            background-color: #f9f9f9;
-        }
-        .product-card img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-        }
-        .product-card h3 {
-            font-size: 16px;
-            margin: 10px 0;
-        }
-        .product-card p {
-            font-size: 14px;
-            color: #555;
-        }
-        .product-card small {
-            font-size: 12px;
-            color: #888;
-            display: block;
-            margin-top: 5px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SnapSell - Genera descripciones automáticas</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.gstatic.com " crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk :wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com ?plugins=forms"></script>
+
+  <!-- Custom Styles -->
+  <style>
+    body {
+      font-family: "Space Grotesk", sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+    }
+    .section {
+      margin-bottom: 40px;
+    }
+    .card {
+      background: #1e1e1e;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+    .btn-primary {
+      background: #38e07b;
+      color: #121212;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .btn-primary:hover {
+      background: #2fc96b;
+    }
+    .btn-disabled {
+      background: #444444;
+      cursor: not-allowed;
+    }
+    .input-field {
+      background: #2a2a2a;
+      border: 1px solid #383838;
+      border-radius: 8px;
+      padding: 10px;
+      color: #ffffff;
+      width: 100%;
+    }
+  </style>
 </head>
 <body>
-    <h1>📸 Vende tus productos fácilmente con Evenci (desarrollado por Andres Gutierrez)</h1>
-    <div id="error-message" class="error" style="display: none;"></div>
-    <!-- Paso 1: Capturar imagen -->
-    <div id="step1">
-        <h2>1. Toma una foto de tu producto</h2>
-        <video id="camera" autoplay></video>
-        <button id="capture">Capturar foto</button>
-        <img id="preview" hidden>
-        <div id="loading-description" class="loading">Generando descripción...</div>
-    </div>
-    <!-- Paso 2: Completar información -->
-    <div id="step2" style="display: none;">
-        <h2>2. Completa los detalles</h2>
-        <textarea id="descripcion" placeholder="Descripción del producto..."></textarea>
-        <input type="number" id="precio" placeholder="Precio (USD)" min="1">
-        <button id="publish">Publicar Producto</button>
-        <div id="loading-publish" class="loading">Publicando producto...</div>
-    </div>
-    <!-- Muro de productos -->
-    <div id="product-wall">
-        <h2>Productos Publicados</h2>
-        <div id="filters-container">
-            <label for="category-filter">Filtrar por categoría:</label>
-            <select id="category-filter">
-                <option value="">Todas las categorías</option>
-                <!-- Opciones se cargarán dinámicamente -->
-            </select>
-            <label for="tag-filter">Filtrar por etiqueta:</label>
-            <select id="tag-filter">
-                <option value="">Todas las etiquetas</option>
-                <!-- Opciones se cargarán dinámicamente -->
-            </select>
-            <button id="apply-filters">Aplicar Filtros</button>
+  <div class="container mx-auto p-4">
+    <!-- Header -->
+    <header class="text-center py-6">
+      <h1 class="text-3xl font-bold text-[#38E07B]">📸 SnapSell</h1>
+      <p class="text-gray-400 mt-2">Genera descripciones automáticas para tus productos</p>
+    </header>
+
+    <!-- Sección 1: Captura de imagen -->
+    <section class="section">
+      <div class="card">
+        <h2 class="text-xl font-semibold mb-4">1. Toma una foto de tu producto</h2>
+        <video id="camera" autoplay class="w-full h-64 object-cover bg-gray-800 rounded-lg"></video>
+        <button id="capture" class="btn-primary mt-4">Capturar foto</button>
+        <img id="preview" class="hidden w-full h-64 object-cover rounded-lg mt-4" />
+        <div id="loading-description" class="text-center text-gray-400 mt-4 hidden">Generando descripción...</div>
+        <div id="generated-description" class="mt-4 text-gray-300 hidden">
+          <strong>Descripción:</strong>
+          <p id="description-text"></p>
         </div>
-        <div id="products-container"></div>
-    </div>
-    <script>
-        // Configuración de la API
-        const API_BASE_URL = "https://envenciproject.onrender.com";
-        // Elementos del DOM
-        const video = document.getElementById('camera');
-        const captureBtn = document.getElementById('capture');
-        const preview = document.getElementById('preview');
-        const descripcion = document.getElementById('descripcion');
-        const publishBtn = document.getElementById('publish');
-        const loadingDescription = document.getElementById('loading-description');
-        const loadingPublish = document.getElementById('loading-publish');
-        const errorMessage = document.getElementById('error-message');
-        const step1 = document.getElementById('step1');
-        const step2 = document.getElementById('step2');
-        const productsContainer = document.getElementById('products-container');
-        const categoryFilter = document.getElementById('category-filter');
-        const tagFilter = document.getElementById('tag-filter');
-        const applyFiltersBtn = document.getElementById('apply-filters');
+      </div>
+    </section>
+  </div>
 
-        // Estado de la aplicación
-        let currentProduct = {
-            image: null,
-            description: null,
-            price: null
-        };
+  <!-- JavaScript -->
+  <script>
+    // Configuración de la API
+    const API_BASE_URL = "https://envenciproject.onrender.com";
 
-        // Mostrar error
-        function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.style.display = 'block';
-            setTimeout(() => errorMessage.style.display = 'none', 5000);
-        }
+    // Elementos del DOM
+    const video = document.getElementById("camera");
+    const captureBtn = document.getElementById("capture");
+    const preview = document.getElementById("preview");
+    const loadingDescription = document.getElementById("loading-description");
+    const generatedDescription = document.getElementById("generated-description");
+    const descriptionText = document.getElementById("description-text");
 
-        // Acceder a la cámara
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => video.srcObject = stream)
-            .catch(err => {
-                console.error("Error al acceder a la cámara:", err);
-                showError("No se pudo acceder a la cámara. Asegúrate de permitir los permisos.");
-            });
+    // Acceder a la cámara
+    navigator.mediaDevices
+      .getUserMedia({ video: true })
+      .then((stream) => (video.srcObject = stream))
+      .catch((err) => {
+        console.error("Error al acceder a la cámara:", err);
+        alert("No se pudo acceder a la cámara. Asegúrate de permitir los permisos.");
+      });
 
-        // Capturar foto
-        captureBtn.addEventListener('click', async () => {
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                currentProduct.image = canvas.toDataURL('image/jpeg');
-                preview.src = currentProduct.image;
-                preview.hidden = false;
+    // Capturar foto
+    captureBtn.addEventListener("click", async () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext("2d").drawImage(video, 0, 0);
 
-                // Mostrar loading
-                loadingDescription.style.display = 'block';
-                captureBtn.disabled = true;
+        // Mostrar la imagen capturada
+        const imageData = canvas.toDataURL("image/jpeg");
+        preview.src = imageData;
+        preview.classList.remove("hidden");
 
-                // 1. Generar descripción con la API
-                const response = await fetch(`${API_BASE_URL}/api/generate-description`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: currentProduct.image })
-                });
-                if (!response.ok) {
-                    throw new Error('Error al generar la descripción');
-                }
-                const data = await response.json();
-                if (data.status === "error") {
-                    throw new Error(data.error || "Error desconocido");
-                }
-                currentProduct.description = data.description;
-                descripcion.value = data.description;
+        // Mostrar loading
+        loadingDescription.classList.remove("hidden");
+        captureBtn.disabled = true;
 
-                // Mostrar paso 2
-                step1.style.display = 'none';
-                step2.style.display = 'block';
-            } catch (error) {
-                console.error("Error:", error);
-                showError(error.message || "Error al generar la descripción. Intenta nuevamente.");
-            } finally {
-                loadingDescription.style.display = 'none';
-                captureBtn.disabled = false;
-            }
+        // Enviar la imagen a la API para generar la descripción
+        const response = await fetch(`${API_BASE_URL}/api/generate-description`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: imageData }),
         });
 
-        // Publicar producto
-        publishBtn.addEventListener('click', async () => {
-            try {
-                const price = parseFloat(document.getElementById('precio').value);
-                if (!price || price <= 0) {
-                    showError("Por favor ingresa un precio válido");
-                    return;
-                }
-                if (!currentProduct.description) {
-                    showError("Por favor genera una descripción primero");
-                    return;
-                }
-                currentProduct.price = price;
+        if (!response.ok) throw new Error("Error al generar la descripción");
 
-                // Mostrar loading
-                loadingPublish.style.display = 'block';
-                publishBtn.disabled = true;
+        const data = await response.json();
+        if (data.status === "error") throw new Error(data.error || "Error desconocido");
 
-                // 2. Publicar producto con la API
-                const response = await fetch(`${API_BASE_URL}/api/publish-product`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        image: currentProduct.image,
-                        description: currentProduct.description,
-                        price: currentProduct.price
-                    })
-                });
-                if (!response.ok) {
-                    throw new Error('Error al publicar el producto');
-                }
-                const data = await response.json();
-                if (data.status === "error") {
-                    throw new Error(data.error || "Error desconocido");
-                }
-                alert('¡Producto publicado con éxito!');
-
-                // Resetear el formulario
-                preview.src = '';
-                preview.hidden = true;
-                descripcion.value = '';
-                document.getElementById('precio').value = '';
-                currentProduct = { image: null, description: null, price: null };
-
-                // Volver al paso 1
-                step2.style.display = 'none';
-                step1.style.display = 'block';
-
-                // Recargar productos en el muro
-                await loadProducts();
-            } catch (error) {
-                console.error("Error:", error);
-                showError(error.message || "Error al publicar el producto. Intenta nuevamente.");
-            } finally {
-                loadingPublish.style.display = 'none';
-                publishBtn.disabled = false;
-            }
-        });
-
-        // Cargar productos al iniciar la página
-        async function loadProducts(category = '', tag = '') {
-            try {
-                // Construir URL con filtros
-                let url = `${API_BASE_URL}/api/get-products`;
-                const params = [];
-                if (category) params.push(`category=${encodeURIComponent(category)}`);
-                if (tag) params.push(`tag=${encodeURIComponent(tag)}`);
-                if (params.length > 0) url += `?${params.join('&')}`;
-
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error('Error al cargar los productos');
-                }
-                const data = await response.json();
-                if (data.status === "error") {
-                    throw new Error(data.error || "Error desconocido");
-                }
-
-                productsContainer.innerHTML = ''; // Limpiar el contenedor
-                data.products.forEach(product => {
-                    const productCard = document.createElement('div');
-                    productCard.className = 'product-card';
-                    productCard.innerHTML = `
-                        <img src="${product.image}" alt="${product.description}">
-                        <h3>${product.description}</h3>
-                        <p>Precio: $${product.price.toFixed(2)}</p>
-                        <small>Categoría: ${product.category}</small>
-                        <small>Etiquetas: ${product.tags.join(', ')}</small>
-                    `;
-                    productsContainer.appendChild(productCard);
-                });
-            } catch (error) {
-                console.error("Error:", error);
-                showError(error.message || "Error al cargar los productos. Intenta nuevamente.");
-            }
-        }
-
-        // Cargar filtros disponibles
-        async function loadFilters() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/get-products`);
-                if (!response.ok) {
-                    throw new Error('Error al cargar los filtros');
-                }
-                const data = await response.json();
-                if (data.status === "error") {
-                    throw new Error(data.error || "Error desconocido");
-                }
-
-                const categories = [...new Set(data.products.map(p => p.category))];
-                const tags = [...new Set(data.products.flatMap(p => p.tags))];
-
-                // Cargar categorías en el filtro
-                categories.forEach(category => {
-                    const option = document.createElement('option');
-                    option.value = category;
-                    option.textContent = category;
-                    categoryFilter.appendChild(option);
-                });
-
-                // Cargar etiquetas en el filtro
-                tags.forEach(tag => {
-                    const option = document.createElement('option');
-                    option.value = tag;
-                    option.textContent = tag;
-                    tagFilter.appendChild(option);
-                });
-            } catch (error) {
-                console.error("Error:", error);
-                showError(error.message || "Error al cargar los filtros. Intenta nuevamente.");
-            }
-        }
-
-        // Aplicar filtros
-        applyFiltersBtn.addEventListener('click', () => {
-            const selectedCategory = categoryFilter.value;
-            const selectedTag = tagFilter.value;
-            loadProducts(selectedCategory, selectedTag);
-        });
-
-        // Cargar productos y filtros al cargar la página
-        window.addEventListener('load', async () => {
-            await loadProducts();
-            await loadFilters();
-        });
-    </script>
+        // Mostrar la descripción generada
+        descriptionText.textContent = data.description;
+        generatedDescription.classList.remove("hidden");
+      } catch (error) {
+        console.error("Error:", error);
+        alert(error.message || "Error al generar la descripción. Intenta nuevamente.");
+      } finally {
+        loadingDescription.classList.add("hidden");
+        captureBtn.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
